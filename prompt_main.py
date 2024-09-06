@@ -125,13 +125,6 @@ prompt_diary = """
 
 - 조언은 2~3문장 이내로 간결하게 작성해 주세요.
 
-사용자의 데이터는 아래와 같습니다.
-사용자의 활동 기록:
-{{
-    "userId": "{userId}",
-    "activities": {activities}
-}}
-
 사용자의 일기:
 {{
     "userId": "{userId}",
@@ -163,6 +156,28 @@ def get_completion(prompt, model='gpt-4o'):
         messages=messages
     )
     return response.choices[0].message.content
+  
+# 점수 계산 함수
+def calculate_weighted_scores_v2(w_score,b_score,weight=1.3):
+    total_score = w_score + b_score
+
+    if total_score == 0:
+        raise ValueError("흰 늑대와 검은 늑대의 총 점수가 0입니다. 점수를 확인해 주세요.")
+
+    white_scaled = (w_score / total_score) * 20
+    black_scaled = (b_score / total_score) * 20
+
+    # 가중치 계산
+    weight_black = weight
+    if black_scaled > white_scaled:
+        black_final_score = black_scaled * weight_black
+        white_final_score = white_scaled  
+    else:
+        black_final_score = black_scaled
+        white_final_score = white_scaled
+        
+    return white_final_score,black_final_score
+  
 
 # 점수 계산 함수
 def calculate_weighted_scores_v2(w_score,b_score,weight=1.3):
@@ -195,21 +210,20 @@ def analyze_activities(user_id, activities):
     response_activity = get_completion(formatted_prompt_act)
     try:
         data = json.loads(response_activity)
-        w_score = data["사용자"]["흰 늑대 총 점수"]
-        b_score = data["사용자"]["검은 늑대 총 점수"]
+        w_score = int(data["사용자"]["흰 늑대 총 점수"])
+        b_score = int(data["사용자"]["검은 늑대 총 점수"])
         w_final,b_final=calculate_weighted_scores_v2(w_score,b_score,weight=1.3)
-        data["사용자"]["흰 늑대 총 점수"]=w_final
-        data["사용자"]["검은 늑대 총 점수"]=b_final
+        data["사용자"]["흰 늑대 총 점수"]=int(w_final)
+        data["사용자"]["검은 늑대 총 점수"]=int(b_final)
         return data
     except json.JSONDecodeError as e:
         raise ValueError(f"JSON decoding error in analyze_activities: {e}")
 
+
 # 일기 분석 함수
-def analyze_diary(user_id, activities, diary):
-    activities_json = json.dumps(activities, ensure_ascii=False, indent=4)
+def analyze_diary(user_id, diary):
     formatted_prompt_diary = prompt_diary.format(
         userId=user_id,
-        activities=activities_json,
         diary=diary
     )
     response_diary = get_completion(formatted_prompt_diary)
