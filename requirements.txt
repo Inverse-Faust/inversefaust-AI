@@ -1,0 +1,21 @@
+# FastAPI and its dependencies
+fastapi
+uvicorn
+requests
+
+# Numerical computations and array operations
+numpy
+
+# Data manipulation and visualization
+pandas
+matplotlib
+seaborn
+
+# Korean language processing
+konlpy
+jpype1 
+
+openai
+
+knusl 
+lxml 
